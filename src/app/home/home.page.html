@@ -12,6 +12,18 @@
 <ion-content>
   <div class="game-container">
 
+    <!-- Selector de nivel -->
+    <div class="nivel-selector">
+      <ion-button 
+        *ngFor="let n of niveles"
+        [fill]="nivelActual === n.valor ? 'solid' : 'outline'"
+        [color]="n.color"
+        size="small"
+        (click)="cambiarNivel(n.valor)">
+        {{ n.nombre }}
+      </ion-button>
+    </div>
+
     <!-- Tablero -->
     <div class="board-wrapper">
       <div class="board">
@@ -52,6 +64,10 @@
     <!-- Botón reporte -->
     <ion-button expand="block" color="medium" (click)="copiarReporte()">
       📋 Copiar reporte
+    </ion-button>
+
+    <ion-button expand="block" color="primary" routerLink="/tutor">
+      🎓 Ir al Tutor
     </ion-button>
 
   </div>

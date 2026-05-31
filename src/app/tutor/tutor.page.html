@@ -1,0 +1,84 @@
+<ion-header>
+  <ion-toolbar color="dark">
+    <ion-buttons slot="start">
+      <ion-button routerLink="/home">
+        <ion-icon name="arrow-back-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>🎓 Tutor de Ajedrez</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="tutor-container">
+
+    <!-- Selector de lección -->
+    <div class="leccion-selector" *ngIf="!leccionActiva">
+      <h2>Elige una lección</h2>
+
+      <div class="categoria">
+        <h3>♟ Aperturas</h3>
+        <ion-card *ngFor="let leccion of lecciones"
+                  (click)="iniciarLeccion(leccion)"
+                  button>
+          <ion-card-header>
+            <ion-card-title>{{ leccion.titulo }}</ion-card-title>
+            <ion-card-subtitle>{{ leccion.subtitulo }}</ion-card-subtitle>
+          </ion-card-header>
+          <ion-card-content>
+            {{ leccion.descripcion }}
+          </ion-card-content>
+        </ion-card>
+      </div>
+    </div>
+
+    <!-- Lección activa -->
+    <div class="leccion-activa" *ngIf="leccionActiva">
+
+      <!-- Progreso -->
+      <div class="progreso">
+        <span class="leccion-titulo">{{ leccionActiva.titulo }}</span>
+        <span class="paso-info">Paso {{ pasoActual + 1 }} de {{ leccionActiva.pasos.length }}</span>
+      </div>
+      <ion-progress-bar [value]="progreso"></ion-progress-bar>
+
+      <!-- Tablero -->
+      <div class="board-wrapper">
+        <div class="board">
+          <div
+            *ngFor="let casilla of tablero; let i = index"
+            class="casilla"
+            [class.clara]="casilla.esClara"
+            [class.oscura]="!casilla.esClara"
+            [class.resaltada]="casilla.resaltada"
+            [class.destino]="casilla.destino">
+            <span class="pieza" *ngIf="casilla.pieza">{{ casilla.pieza }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Explicación del paso -->
+      <div class="explicacion-box">
+        <div class="paso-icono">{{ pasoActual === 0 ? '📖' : '♟' }}</div>
+        <p class="explicacion-texto">{{ leccionActiva.pasos[pasoActual].explicacion }}</p>
+      </div>
+
+      <!-- Botones navegación -->
+      <div class="nav-botones">
+        <ion-button fill="outline" (click)="pasoAnterior()" [disabled]="pasoActual === 0">
+          ← Anterior
+        </ion-button>
+        <ion-button (click)="pasoSiguiente()"
+                    [color]="esUltimoPaso ? 'success' : 'primary'">
+          {{ esUltimoPaso ? '✓ Terminar' : 'Siguiente →' }}
+        </ion-button>
+      </div>
+
+      <!-- Botón volver -->
+      <ion-button expand="block" fill="clear" color="medium" (click)="volverAlMenu()">
+        Volver al menú de lecciones
+      </ion-button>
+
+    </div>
+  </div>
+</ion-content>
