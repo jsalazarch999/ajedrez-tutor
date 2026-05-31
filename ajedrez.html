@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ajedrez</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #F5F0E8;
+  --parchment: #EDE5D0;
+  --board-light: #F0D9B5;
+  --board-dark: #B58863;
+  --board-border: #8B6914;
+  --sel: #F6F669;
+  --lastmove: rgba(246,246,22,0.45);
+  --dot: rgba(0,0,0,0.18);
+  --text: #2C1810;
+  --text2: #7A5C3E;
+  --text3: #A08060;
+  --accent: #B58863;
+  --accent2: #8B6914;
+  --white-piece: #FFFFFF;
+  --black-piece: #1A1008;
+  --panel-bg: #F9F4EA;
+  --log-bg: #FFFDF8;
+  --border: #D4C4A0;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--cream);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2rem 1rem;}
+h1{font-family:'Playfair Display',serif;font-size:2rem;font-weight:600;letter-spacing:0.02em;color:var(--text);margin-bottom:0.25rem;}
+.subtitle{font-size:11px;color:var(--text3);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:2rem;}
+#main{display:flex;gap:2rem;align-items:flex-start;flex-wrap:wrap;justify-content:center;}
+
+/* Board */
+#board-wrap{display:flex;flex-direction:column;align-items:center;}
+#ctop{display:flex;padding-left:22px;margin-bottom:3px;}
+#ctop span{width:54px;text-align:center;font-size:10px;color:var(--text3);letter-spacing:0.05em;}
+#bmid{display:flex;}
+#cside{display:flex;flex-direction:column;}
+#cside span{height:54px;width:22px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text3);}
+#board{display:grid;grid-template-columns:repeat(8,54px);grid-template-rows:repeat(8,54px);border:3px solid var(--board-border);box-shadow:0 8px 32px rgba(44,24,16,0.18),0 2px 8px rgba(44,24,16,0.1);}
+.sq{width:54px;height:54px;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;user-select:none;transition:filter 0.08s;}
+.lt{background:var(--board-light);}.dk{background:var(--board-dark);}
+.sq.sel{background:var(--sel)!important;}
+.sq.lm{background:var(--lastmove)!important;}
+.sq:hover{filter:brightness(1.07);}
+.sq.dot::after{content:'';position:absolute;width:18px;height:18px;border-radius:50%;background:var(--dot);pointer-events:none;z-index:2;}
+.sq.capdot::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 4px rgba(0,0,0,0.22);z-index:2;}
+.piece{font-size:36px;line-height:1;position:relative;z-index:1;transition:transform 0.1s;}
+.piece.wp{color:var(--white-piece);text-shadow:0 0 3px #000,0 0 6px #555,0 1px 0 #888;}
+.piece.bp{color:var(--black-piece);text-shadow:0 0 2px #ccc,0 1px 2px rgba(255,255,255,0.3);}
+.sq:hover .piece{transform:scale(1.08);}
+
+/* Panel */
+#panel{width:220px;display:flex;flex-direction:column;gap:12px;}
+.card{background:var(--panel-bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;}
+#status{font-family:'Playfair Display',serif;font-size:17px;font-weight:600;color:var(--text);margin-bottom:4px;}
+#info{font-size:11px;color:var(--text2);line-height:1.6;min-height:16px;}
+#capd{font-size:13px;color:var(--text2);line-height:2;}
+#log-title{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+#log{font-size:12px;color:var(--text2);max-height:200px;overflow-y:auto;line-height:2;background:var(--log-bg);border-radius:6px;padding:8px 10px;border:1px solid var(--border);}
+#log::-webkit-scrollbar{width:4px;}
+#log::-webkit-scrollbar-track{background:transparent;}
+#log::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+#hint{font-size:11px;color:var(--text3);line-height:1.6;font-style:italic;}
+
+/* Buttons */
+.btn{font-family:'DM Mono',monospace;font-size:12px;padding:10px 14px;border-radius:8px;cursor:pointer;width:100%;text-align:center;transition:all 0.15s;letter-spacing:0.03em;}
+.btn-primary{background:var(--accent2);color:#fff;border:none;}
+.btn-primary:hover{background:var(--board-border);transform:translateY(-1px);}
+.btn-secondary{background:transparent;color:var(--text2);border:1px solid var(--border);}
+.btn-secondary:hover{background:var(--parchment);}
+#copy-msg{font-size:11px;color:var(--accent2);text-align:center;opacity:0;transition:opacity 0.3s;height:16px;}
+
+/* Promotion modal */
+#pmask{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;align-items:center;justify-content:center;}
+#pmask.on{display:flex;}
+#pbox{background:var(--panel-bg);border-radius:14px;padding:24px 28px;text-align:center;border:2px solid var(--border);box-shadow:0 16px 48px rgba(0,0,0,0.3);}
+#pbox h3{font-family:'Playfair Display',serif;font-size:18px;margin-bottom:16px;color:var(--text);}
+#pbox .pchoices{display:flex;gap:12px;justify-content:center;}
+#pbox .pchoices span{font-size:42px;cursor:pointer;transition:transform 0.1s;display:block;}
+#pbox .pchoices span:hover{transform:scale(1.15);}
+#pbox .pchoices span.wp{color:var(--white-piece);text-shadow:0 0 4px #000,0 0 8px #555;}
+#pbox .pchoices span.bp{color:var(--black-piece);text-shadow:0 0 3px #ccc;}
+#pbox small{display:block;margin-top:10px;font-size:11px;color:var(--text3);}
+
+/* Result banner */
+#result-banner{display:none;background:var(--accent2);color:#fff;font-family:'Playfair Display',serif;font-size:15px;text-align:center;padding:10px 16px;border-radius:8px;}
+#result-banner.on{display:block;}
+</style>
+</head>
+<body>
+<h1>Ajedrez</h1>
+<div class="subtitle">Blancas vs Negras (IA)</div>
+
+<div id="main">
+  <!-- Board -->
+  <div id="board-wrap">
+    <div id="ctop"><span>a</span><span>b</span><span>c</span><span>d</span><span>e</span><span>f</span><span>g</span><span>h</span></div>
+    <div id="bmid">
+      <div id="cside"></div>
+      <div id="board"></div>
+    </div>
+  </div>
+
+  <!-- Panel -->
+  <div id="panel">
+    <div class="card">
+      <div id="status">⬜ Blancas juegan</div>
+      <div id="info">Selecciona una pieza blanca</div>
+    </div>
+    <div class="card">
+      <div id="capd"></div>
+    </div>
+    <div class="card">
+      <div id="log-title">Jugadas</div>
+      <div id="log"><em style="color:#bbb;font-size:11px">Las jugadas aparecerán aquí…</em></div>
+    </div>
+    <div id="result-banner"></div>
+    <div id="hint"></div>
+    <button class="btn btn-primary" id="bCopy">📋 Copiar reporte</button>
+    <div id="copy-msg">¡Copiado! Pégalo en Claude para análisis.</div>
+    <button class="btn btn-secondary" id="bRe">↺ Nueva partida</button>
+  </div>
+</div>
+
+<!-- Promotion modal -->
+<div id="pmask">
+  <div id="pbox">
+    <h3>¡Promoción!</h3>
+    <div class="pchoices" id="pch"></div>
+    <small>Elige la pieza para tu peón</small>
+  </div>
+</div>
+
+<script>
+const GL={wP:'♙',wR:'♖',wN:'♘',wB:'♗',wQ:'♕',wK:'♔',bP:'♟',bR:'♜',bN:'♞',bB:'♝',bQ:'♛',bK:'♚'};
+const NM={P:'Peón',R:'Torre',N:'Caballo',B:'Alfil',Q:'Reina',K:'Rey'};
+const FS='abcdefgh';
+let bd,turn,sel,pos,lmv,cW,cB,over,cR,hist;
+
+function init(){
+  bd=Array(8).fill(0).map(()=>Array(8).fill(null));
+  const bk=['R','N','B','Q','K','B','N','R'];
+  for(let c=0;c<8;c++){bd[0][c]='b'+bk[c];bd[1][c]='bP';bd[6][c]='wP';bd[7][c]='w'+bk[c];}
+  turn='w';sel=null;pos=[];lmv=null;cW=[];cB=[];over=false;
+  cR={wK:true,wQ:true,bK:true,bQ:true};hist=[];
+  document.getElementById('result-banner').classList.remove('on');
+  document.getElementById('copy-msg').style.opacity='0';
+}
+
+const op=t=>t==='w'?'b':'w';
+const iB=(r,c)=>r>=0&&r<8&&c>=0&&c<8;
+
+function pMv(r,c,b,t){
+  const d=t==='w'?-1:1,sr=t==='w'?6:1,m=[];
+  if(iB(r+d,c)&&!b[r+d][c]){m.push([r+d,c,'']);if(r===sr&&!b[r+2*d][c])m.push([r+2*d,c,'']);}
+  for(const dc of[-1,1])if(iB(r+d,c+dc)&&b[r+d][c+dc]?.[0]===op(t))m.push([r+d,c+dc,'']);
+  return m;
+}
+function slMv(r,c,b,t,ds){
+  const m=[];
+  for(const[dr,dc]of ds){let nr=r+dr,nc=c+dc;while(iB(nr,nc)){if(b[nr][nc]){if(b[nr][nc][0]===op(t))m.push([nr,nc,'']);break;}m.push([nr,nc,'']);nr+=dr;nc+=dc;}}
+  return m;
+}
+function knMv(r,c,b,t){return[[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].filter(([dr,dc])=>iB(r+dr,c+dc)&&(!b[r+dr][c+dc]||b[r+dr][c+dc][0]===op(t))).map(([dr,dc])=>[r+dr,c+dc,'']);}
+function kgMv(r,c,b,t){return[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].filter(([dr,dc])=>iB(r+dr,c+dc)&&(!b[r+dr][c+dc]||b[r+dr][c+dc][0]===op(t))).map(([dr,dc])=>[r+dr,c+dc,'']);}
+function caMv(r,c,b,t,cRts){
+  const m=[];
+  if(t==='w'&&r===7&&c===4){
+    if(cRts.wK&&!b[7][5]&&!b[7][6]&&b[7][7]==='wR')m.push([7,6,'ck']);
+    if(cRts.wQ&&!b[7][3]&&!b[7][2]&&!b[7][1]&&b[7][0]==='wR')m.push([7,2,'cq']);
+  }
+  if(t==='b'&&r===0&&c===4){
+    if(cRts.bK&&!b[0][5]&&!b[0][6]&&b[0][7]==='bR')m.push([0,6,'ck']);
+    if(cRts.bQ&&!b[0][3]&&!b[0][2]&&!b[0][1]&&b[0][0]==='bR')m.push([0,2,'cq']);
+  }
+  return m;
+}
+function raw(r,c,b,t,cRts){
+  const p=b[r][c];if(!p||p[0]!==t)return[];
+  const tp=p[1];
+  if(tp==='P')return pMv(r,c,b,t);
+  if(tp==='R')return slMv(r,c,b,t,[[-1,0],[1,0],[0,-1],[0,1]]);
+  if(tp==='B')return slMv(r,c,b,t,[[-1,-1],[-1,1],[1,-1],[1,1]]);
+  if(tp==='Q')return slMv(r,c,b,t,[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]]);
+  if(tp==='N')return knMv(r,c,b,t);
+  if(tp==='K')return[...kgMv(r,c,b,t),...caMv(r,c,b,t,cRts)];
+  return[];
+}
+function att(b,t,r,c){
+  const o=op(t);
+  for(let br=0;br<8;br++)for(let bc=0;bc<8;bc++)
+    if(b[br][bc]?.[0]===o&&raw(br,bc,b,o,{wK:false,wQ:false,bK:false,bQ:false}).some(([mr,mc])=>mr===r&&mc===c))return true;
+  return false;
+}
+function fK(b,t){for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(b[r][c]===t+'K')return[r,c];return[-1,-1];}
+function inCk(b,t){const[kr,kc]=fK(b,t);return kr<0||att(b,t,kr,kc);}
+function apMv(b,r,c,nr,nc,fl){
+  const nb=b.map(x=>[...x]);
+  nb[nr][nc]=nb[r][c];nb[r][c]=null;
+  if(fl==='ck'){nb[nr][nc-1]=nb[nr][7];nb[nr][7]=null;}
+  if(fl==='cq'){nb[nr][nc+1]=nb[nr][0];nb[nr][0]=null;}
+  return nb;
+}
+function legal(r,c,b,t,cRts){
+  return raw(r,c,b,t,cRts).filter(([nr,nc,fl])=>{
+    if(fl==='ck'){if(inCk(b,t))return false;if(att(apMv(b,r,c,r,c+1,''),t,r,c+1))return false;}
+    if(fl==='cq'){if(inCk(b,t))return false;if(att(apMv(b,r,c,r,c-1,''),t,r,c-1))return false;}
+    return!inCk(apMv(b,r,c,nr,nc,fl),t);
+  });
+}
+function allLg(b,t,cRts){
+  const all=[];
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++)if(b[r][c]?.[0]===t)all.push(...legal(r,c,b,t,cRts).map(m=>[r,c,...m]));
+  return all;
+}
+function algNote(r,c,nr,nc,p,fl,cap){
+  if(fl==='ck')return'O-O';if(fl==='cq')return'O-O-O';
+  const tp=p[1],x=cap?'x':'';
+  if(tp==='P')return(cap?FS[c]+'x':'')+FS[nc]+(8-nr);
+  return NM[tp][0]+x+FS[nc]+(8-nr);
+}
+function updCR(p,r,c){
+  if(p==='wK'){cR.wK=cR.wQ=false;}
+  if(p==='bK'){cR.bK=cR.bQ=false;}
+  if(p==='wR'){if(c===7)cR.wK=false;if(c===0)cR.wQ=false;}
+  if(p==='bR'){if(c===7)cR.bK=false;if(c===0)cR.bQ=false;}
+}
+function doMv(r,c,nr,nc,fl,promo){
+  const piece=bd[r][c],cap=bd[nr][nc];
+  const a=algNote(r,c,nr,nc,piece,fl,!!cap);
+  updCR(piece,r,c);
+  bd=apMv(bd,r,c,nr,nc,fl);
+  if(piece==='wP'&&nr===0)bd[nr][nc]='w'+(promo||'Q');
+  if(piece==='bP'&&nr===7)bd[nr][nc]='b'+(promo||'Q');
+  if(cap){if(turn==='w')cB.push(cap);else cW.push(cap);}
+  lmv=[[r,c],[nr,nc]];
+  hist.push({turn,alg:a,piece,captured:cap});
+  sel=null;pos=[];
+}
+function aiMv(){
+  const mvs=allLg(bd,'b',cR);if(!mvs.length)return;
+  const sc=mvs.map(m=>{
+    let s=Math.random()*0.5;
+    if(bd[m[2]][m[3]])s+=3;
+    if(m[2]>=3&&m[2]<=4&&m[3]>=3&&m[3]<=4)s+=1;
+    if(m[4]==='ck'||m[4]==='cq')s+=0.8;
+    // Check if move gives check
+    const nb=apMv(bd,m[0],m[1],m[2],m[3],m[4]||'');
+    if(inCk(nb,'w'))s+=1.5;
+    return{m,s};
+  }).sort((a,b)=>b.s-a.s);
+  const[r,c,nr,nc,fl]=sc[0].m;
+  doMv(r,c,nr,nc,fl||'');
+}
+
+function buildReport(){
+  let txt='=== REPORTE DE PARTIDA DE AJEDREZ ===\n';
+  txt+='Blancas: Jugador | Negras: IA\n\n';
+  txt+='Jugadas:\n';
+  for(let i=0;i<hist.length;i+=2){
+    const n=Math.floor(i/2)+1,w=hist[i]?.alg||'',b=hist[i+1]?.alg||'';
+    txt+=`${n}. ${w}${b?' '+b:''}\n`;
+  }
+  txt+='\nResultado: '+document.getElementById('status').textContent+'\n';
+  txt+='\nTotal de movimientos: '+hist.length+'\n';
+  const caps=cB.length;const loses=cW.length;
+  txt+='Piezas capturadas por blancas: '+caps+'\n';
+  txt+='Piezas capturadas por negras: '+loses+'\n';
+  txt+='\n---\nPega este reporte en Claude y pídele que lo analice.\n';
+  return txt;
+}
+
+function render(){
+  const bEl=document.getElementById('board');bEl.innerHTML='';
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const sq=document.createElement('div');
+      sq.className='sq '+((r+c)%2===0?'lt':'dk');
+      if(sel&&sel[0]===r&&sel[1]===c)sq.classList.add('sel');
+      if(lmv&&lmv.some(([lr,lc])=>lr===r&&lc===c))sq.classList.add('lm');
+      const ip=pos.find(([pr,pc])=>pr===r&&pc===c);
+      if(ip)sq.classList.add(bd[r][c]?'capdot':'dot');
+      if(bd[r][c]){
+        const sp=document.createElement('span');
+        sp.className='piece '+(bd[r][c][0]==='w'?'wp':'bp');
+        sp.textContent=GL[bd[r][c]];
+        sq.appendChild(sp);
+      }
+      sq.dataset.r=r;sq.dataset.c=c;
+      sq.addEventListener('click',onSq);
+      bEl.appendChild(sq);
+    }
+  }
+  const cs=document.getElementById('cside');cs.innerHTML='';
+  for(let r=0;r<8;r++){const s=document.createElement('span');s.textContent=8-r;cs.appendChild(s);}
+
+  // Log
+  const lg=document.getElementById('log');
+  if(!hist.length){lg.innerHTML='<em style="color:#bbb;font-size:11px">Las jugadas aparecerán aquí…</em>';}
+  else{
+    let h='';
+    for(let i=0;i<hist.length;i+=2){
+      const n=Math.floor(i/2)+1,w=hist[i]?.alg||'',bm=hist[i+1]?.alg||'';
+      h+=`<span style="color:#bbb">${n}.</span> <b>${w}</b>${bm?' <span style="color:#888">'+bm+'</span>':''} `;
+    }
+    lg.innerHTML=h;lg.scrollTop=lg.scrollHeight;
+  }
+
+  // Status
+  const chk=inCk(bd,turn),mvs=allLg(bd,turn,cR);
+  const stEl=document.getElementById('status'),inEl=document.getElementById('info'),hiEl=document.getElementById('hint');
+  const banner=document.getElementById('result-banner');
+  if(!mvs.length&&!over){
+    over=true;
+    let res='';
+    if(chk){res=turn==='w'?'⬛ Jaque mate — Ganan las negras':'⬜ Jaque mate — Ganan las blancas';}
+    else res='½ Tablas por ahogado';
+    stEl.textContent=res;
+    inEl.textContent='Fin del juego.';
+    banner.textContent=res;
+    banner.classList.add('on');
+    hiEl.textContent='Copia el reporte y pégalo en Claude para análisis detallado.';
+  }else if(!over){
+    stEl.textContent=turn==='w'?'⬜ Blancas juegan':'⬛ Negras juegan...';
+    inEl.textContent=chk?'¡Jaque! Debes proteger tu rey.':(sel?NM[bd[sel[0]][sel[1]][1]]+' seleccionado':'Selecciona una pieza blanca');
+    hiEl.textContent=(cR.wK||cR.wQ)?'Tip: enroque disponible si el camino está libre.':'';
+  }
+
+  const wC=cW.map(p=>GL[p]).join(''),bC=cB.map(p=>GL[p]).join('');
+  document.getElementById('capd').innerHTML=
+    (bC?`<div>Tus capturas: <span style="font-size:14px">${bC}</span></div>`:'')+
+    (wC?`<div>Capturas rivales: <span style="font-size:14px">${wC}</span></div>`:'');
+  if(!bC&&!wC)document.getElementById('capd').innerHTML='<span style="font-size:11px;color:#bbb">Sin capturas aún</span>';
+}
+
+function onSq(e){
+  if(over||turn!=='w')return;
+  const r=+e.currentTarget.dataset.r,c=+e.currentTarget.dataset.c;
+  if(sel){
+    const mv=pos.find(([pr,pc])=>pr===r&&pc===c);
+    if(mv){
+      const[pr,pc,fl]=mv;
+      if(bd[sel[0]][sel[1]]==='wP'&&pr===0){showPr(sel[0],sel[1],pr,pc,fl||'');return;}
+      doMv(sel[0],sel[1],pr,pc,fl||'');
+      turn='b';render();
+      setTimeout(()=>{aiMv();turn='w';sel=null;pos=[];render();},480);
+      return;
+    }
+    sel=null;pos=[];
+  }
+  if(bd[r][c]?.[0]==='w'){
+    sel=[r,c];
+    pos=legal(r,c,bd,'w',cR).map(([nr,nc,f])=>[nr,nc,f||'']);
+  }
+  render();
+}
+function showPr(r,c,nr,nc,fl){
+  const mask=document.getElementById('pmask'),ch=document.getElementById('pch');
+  ch.innerHTML='';mask.classList.add('on');
+  for(const tp of['Q','R','B','N']){
+    const sp=document.createElement('span');sp.className='wp';sp.textContent=GL['w'+tp];sp.title=NM[tp];
+    sp.addEventListener('click',()=>{
+      mask.classList.remove('on');
+      doMv(r,c,nr,nc,fl,tp);
+      turn='b';render();
+      setTimeout(()=>{aiMv();turn='w';sel=null;pos=[];render();},480);
+    });
+    ch.appendChild(sp);
+  }
+}
+
+document.getElementById('bRe').addEventListener('click',()=>{init();render();});
+document.getElementById('bCopy').addEventListener('click',()=>{
+  if(!hist.length){alert('¡Aún no has jugado ningún movimiento!');return;}
+  const report=buildReport();
+  navigator.clipboard.writeText(report).then(()=>{
+    const msg=document.getElementById('copy-msg');
+    msg.style.opacity='1';
+    setTimeout(()=>msg.style.opacity='0',3000);
+  }).catch(()=>{
+    // fallback
+    const ta=document.createElement('textarea');
+    ta.value=report;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const msg=document.getElementById('copy-msg');
+    msg.style.opacity='1';
+    setTimeout(()=>msg.style.opacity='0',3000);
+  });
+});
+
+init();render();
+</script>
+</body>
+</html>

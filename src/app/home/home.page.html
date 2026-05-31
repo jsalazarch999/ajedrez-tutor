@@ -1,20 +1,58 @@
-<ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>
-      Blank
-    </ion-title>
+<ion-header>
+  <ion-toolbar color="dark">
+    <ion-title>♟ Ajedrez</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="nuevaPartida()">
+        <ion-icon name="refresh-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content>
+  <div class="game-container">
 
-  <div id="container">
-    <strong>Ready to create an app?</strong>
-    <p>Start with Ionic <a target="_blank" rel="noopener noreferrer" href="https://ionicframework.com/docs/components">UI Components</a></p>
+    <!-- Tablero -->
+    <div class="board-wrapper">
+      <div class="board">
+        <div
+          *ngFor="let casilla of tablero; let i = index"
+          class="casilla"
+          [class.clara]="casilla.esClara"
+          [class.oscura]="!casilla.esClara"
+          [class.seleccionada]="casilla.seleccionada"
+          [class.movimiento]="casilla.movimientoPosible"
+          (click)="onCasillaClick(i)">
+          <span class="pieza" *ngIf="casilla.pieza">
+            {{ casilla.pieza }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="info-panel">
+      <ion-chip [color]="turno === 'w' ? 'light' : 'dark'">
+        {{ turno === 'w' ? '⬜ Turno: Blancas' : '⬛ Turno: Negras' }}
+      </ion-chip>
+      <p class="mensaje">{{ mensaje }}</p>
+    </div>
+
+    <!-- Jugadas -->
+    <div class="moves-panel">
+      <h4>Jugadas</h4>
+      <p class="moves-text" *ngIf="historial.length === 0">Sin jugadas aún...</p>
+      <div class="moves-list">
+        <span *ngFor="let mov of historial; let i = index">
+          <strong *ngIf="i % 2 === 0">{{ (i/2)+1 }}.</strong> {{ mov }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Botón reporte -->
+    <ion-button expand="block" color="medium" (click)="copiarReporte()">
+      📋 Copiar reporte
+    </ion-button>
+
   </div>
 </ion-content>
