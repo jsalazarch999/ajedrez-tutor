@@ -1,0 +1,7 @@
+{
+  "name": "ajedrez-tutor",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}
